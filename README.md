@@ -107,6 +107,36 @@ Environment variables:
 | `CURSOR_ACP_REQUEST_TIMEOUT` | Default request timeout in milliseconds |
 | `CURSOR_ACP_LOG_LEVEL=debug` | Enable debug logging |
 
+## Docker image deployment
+
+Build and publish the service image to GitHub Packages / GitHub Container Registry:
+
+```bash
+GHCR_TOKEN=ghp_xxx npm run docker:publish
+```
+
+The token must have `packages:write` permission. The script infers the default image from the GitHub remote, for example:
+
+```text
+ghcr.io/<owner>/<repo>
+```
+
+Published tags:
+
+- `:<package.json version>`
+- `:sha-<git sha>`
+- `:latest`
+
+Options:
+
+```bash
+scripts/deploy-ghcr.sh --image ghcr.io/acme/open-cursor --tag canary --no-latest
+scripts/deploy-ghcr.sh --platform linux/amd64,linux/arm64
+scripts/deploy-ghcr.sh --dry-run
+```
+
+The image contains the OpenAI-compatible Node service. Provide `cursor-agent` at runtime by extending the image or mounting the executable and setting `CURSOR_AGENT_EXECUTABLE`.
+
 ## Development
 
 ```bash
