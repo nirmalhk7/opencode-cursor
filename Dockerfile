@@ -8,7 +8,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm,id=npm-${TARGETARCH},sharing=locked \
   npm ci
 
 FROM deps AS build
@@ -59,7 +59,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends bash ca-certificates git \
   && rm -rf /var/lib/apt/lists/*
 
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm,id=npm-${TARGETARCH},sharing=locked \
   npm ci --omit=dev --ignore-scripts \
   && npm cache clean --force
 
