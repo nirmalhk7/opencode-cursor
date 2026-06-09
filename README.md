@@ -23,13 +23,13 @@ From source:
 ```bash
 npm install
 npm run build
-npm run serve -- --port 32124 --workspace "$PWD"
+npm run serve -- --port 32124
 ```
 
 After build, the package binary starts the service:
 
 ```bash
-agentproxy --port 32124 --workspace "$PWD"
+agentproxy --port 32124
 ```
 
 Default base URL:
@@ -38,11 +38,13 @@ Default base URL:
 http://127.0.0.1:32124/v1
 ```
 
+Agentproxy does not require or invent a project workspace. When used behind OpenClaw, directory/project context should be managed at the OpenClaw layer. Agentproxy only forwards `--workspace` to `cursor-agent` if `--workspace` or `CURSOR_ACP_WORKSPACE` is explicitly set.
+
 ## Endpoints
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/health` | Service health and workspace metadata |
+| `GET` | `/health` | Service health metadata |
 | `GET` | `/v1/models` | OpenAI model list from `cursor-agent models` |
 | `GET` | `/models` | Alias for `/v1/models` |
 | `POST` | `/v1/chat/completions` | OpenAI chat completions |
@@ -103,7 +105,7 @@ CLI flags:
 | --- | --- | --- |
 | `--host` | `127.0.0.1` | Host to bind |
 | `--port` | `32124` | Port to bind; falls back to another local port if busy |
-| `--workspace` | current directory | Workspace passed to `cursor-agent --workspace` |
+| `--workspace` | unset | Optional workspace passed through to `cursor-agent --workspace` |
 | `--cursor-agent` | resolved from `CURSOR_AGENT_EXECUTABLE` or `PATH` | Cursor agent executable |
 | `--request-timeout` | `0` | Request timeout in milliseconds; `0` disables |
 
@@ -113,7 +115,7 @@ Environment variables:
 | --- | --- |
 | `HOST` | Default bind host |
 | `PORT` | Default bind port |
-| `CURSOR_ACP_WORKSPACE` | Default workspace |
+| `CURSOR_ACP_WORKSPACE` | Optional workspace forwarded to cursor-agent |
 | `CURSOR_AGENT_EXECUTABLE` | Cursor agent executable path |
 | `CURSOR_ACP_REQUEST_TIMEOUT` | Default request timeout in milliseconds |
 | `CURSOR_ACP_LOG_LEVEL=debug` | Enable debug logging |

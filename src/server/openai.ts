@@ -32,7 +32,6 @@ import { MixedDeltaTracker } from "../streaming/delta-tracker.js";
 const log = createLogger("openai-service");
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_WORKSPACE = process.env.CURSOR_ACP_WORKSPACE || process.cwd();
 const DEFAULT_REQUEST_TIMEOUT_MS = 0;
 const MODEL_CACHE_TTL_MS = 30_000;
 const MAX_REQUEST_BODY_BYTES = 20 * 1024 * 1024;
@@ -48,6 +47,12 @@ export interface OpenAiServiceOptions {
   cursorAgentPath?: string;
   requestTimeout?: number;
 }
+
+type ResolvedOpenAiServiceOptions = {
+  workspaceDirectory?: string;
+  cursorAgentPath: string;
+  requestTimeout: number;
+};
 
 type ChatCompletionRequest = {
   model?: unknown;
@@ -348,7 +353,7 @@ function parseModelList(output: string): ModelList {
   return { object: "list", data: models };
 }
 
-async function getModels(options: Required<OpenAiServiceOptions>): Promise<ModelList> {
+async function getModels(options: ResolvedOpenAiServiceOptions): Promise<ModelList> {
   const key = options.cursorAgentPath;
   const cached = modelCache.get(key);
   const now = Date.now();
@@ -385,7 +390,7 @@ async function getModels(options: Required<OpenAiServiceOptions>): Promise<Model
 function createCursorAgentProcess(
   prompt: string,
   model: string,
-  options: Required<OpenAiServiceOptions>,
+  options: ResolvedOpenAiServiceOptions,
 ): ChildProcessWithoutNullStreams {
   const cmd = [
     options.cursorAgentPath,
@@ -393,11 +398,12 @@ function createCursorAgentProcess(
     "--output-format",
     "stream-json",
     "--stream-partial-output",
-    "--workspace",
-    options.workspaceDirectory,
     "--model",
     model,
   ];
+  if (options.workspaceDirectory) {
+    cmd.push("--workspace", options.workspaceDirectory);
+  }
 
   const child = spawn(formatShellCommandForPlatform(cmd[0]), cmd.slice(1), {
     stdio: ["pipe", "pipe", "pipe"],
@@ -575,7 +581,7 @@ export function extractCompletionFromStream(
   return { assistantText, reasoningText, usage, toolCalls };
 }
 
-async function handleModels(res: ServerResponse, options: Required<OpenAiServiceOptions>) {
+async function handleModels(res: ServerResponse, options: ResolvedOpenAiServiceOptions) {
   try {
     writeJson(res, 200, await getModels(options));
   } catch (error) {
@@ -584,7 +590,7 @@ async function handleModels(res: ServerResponse, options: Required<OpenAiService
   }
 }
 
-async function handleModel(res: ServerResponse, options: Required<OpenAiServiceOptions>, modelId: string) {
+async function handleModel(res: ServerResponse, options: ResolvedOpenAiServiceOptions, modelId: string) {
   try {
     const models = await getModels(options);
     const model = models.data.find((entry) => entry.id === modelId);
@@ -611,7 +617,7 @@ function attachTimeout(child: ChildProcessWithoutNullStreams, timeout: number) {
 async function handleNonStreamingChat(
   res: ServerResponse,
   body: ChatCompletionRequest,
-  options: Required<OpenAiServiceOptions>,
+  options: ResolvedOpenAiServiceOptions,
 ) {
   const { prepared, error } = prepareChatRequest(body);
   if (!prepared) {
@@ -687,7 +693,7 @@ async function handleStreamingChat(
   req: IncomingMessage,
   res: ServerResponse,
   body: ChatCompletionRequest,
-  options: Required<OpenAiServiceOptions>,
+  options: ResolvedOpenAiServiceOptions,
 ) {
   const { prepared, error } = prepareChatRequest(body);
   if (!prepared) {
@@ -851,8 +857,8 @@ async function handleStreamingChat(
 }
 
 export function createOpenAiRequestHandler(serviceOptions: OpenAiServiceOptions = {}) {
-  const options: Required<OpenAiServiceOptions> = {
-    workspaceDirectory: serviceOptions.workspaceDirectory ?? DEFAULT_WORKSPACE,
+  const options: ResolvedOpenAiServiceOptions = {
+    workspaceDirectory: serviceOptions.workspaceDirectory,
     cursorAgentPath: serviceOptions.cursorAgentPath ?? resolveCursorAgentBinary(),
     requestTimeout: serviceOptions.requestTimeout ?? DEFAULT_REQUEST_TIMEOUT_MS,
   };
@@ -876,7 +882,7 @@ export function createOpenAiRequestHandler(serviceOptions: OpenAiServiceOptions 
         writeJson(res, 200, {
           ok: true,
           service: "agentproxy",
-          workspaceDirectory: options.workspaceDirectory,
+          workspaceDirectory: options.workspaceDirectory ?? null,
         });
         return;
       }

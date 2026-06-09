@@ -41,6 +41,7 @@ Do not reintroduce Bun-only scripts for the active service workflow.
 
 - The service exposes `/health`, `/v1/models`, `/v1/models/{id}`, and `/v1/chat/completions`.
 - Authentication is handled by `cursor-agent`, not by the OpenAI `Authorization` header.
+- Do not force a workspace into `cursor-agent`. Directory/project context belongs to the upstream OpenClaw/client layer. Only pass `--workspace` when a user explicitly sets `--workspace` or `CURSOR_ACP_WORKSPACE`.
 - In containers, prefer `CURSOR_API_KEY` for unattended deployments.
 - Browser login is supported by running the container with `login` and a persistent `/root/.cursor` volume.
 

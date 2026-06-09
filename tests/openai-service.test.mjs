@@ -22,6 +22,10 @@ process.stdin.setEncoding("utf8");
 let input = "";
 process.stdin.on("data", (chunk) => input += chunk);
 process.stdin.on("end", () => {
+  if (input.includes("REPORT_WORKSPACE_FLAG")) {
+    process.stdout.write(JSON.stringify({ type: "assistant", timestamp_ms: Date.now(), message: { role: "assistant", content: [{ type: "text", text: String(args.includes("--workspace")) }] } }) + "\\n");
+    return;
+  }
   if (input.includes("CALL_WEATHER")) {
     process.stdout.write(JSON.stringify({ type: "tool_call", call_id: "call_weather", tool_call: { weatherToolCall: { args: { location: "Paris", unit: "celsius" } } } }) + "\\n");
     process.stdout.write(JSON.stringify({ type: "result", subtype: "success", usage: { inputTokens: 4, outputTokens: 0 } }) + "\\n");
@@ -62,6 +66,34 @@ test("serves health metadata", async () => {
   assert.equal(body.ok, true);
   assert.equal(body.service, "agentproxy");
   assert.equal(body.workspaceDirectory, "/tmp");
+});
+
+test("does not pass --workspace to cursor-agent unless explicitly configured", async () => {
+  const noWorkspaceServer = createProxyServer({
+    port: 32141,
+    cursorAgentPath: agentPath,
+  });
+  const noWorkspaceBaseURL = await noWorkspaceServer.start();
+  try {
+    const health = await fetch(`${noWorkspaceBaseURL.replace(/\/v1$/, "")}/health`);
+    assert.equal(health.status, 200);
+    assert.equal((await health.json()).workspaceDirectory, null);
+
+    const response = await fetch(`${noWorkspaceBaseURL}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "auto",
+        messages: [{ role: "user", content: "REPORT_WORKSPACE_FLAG" }],
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.choices[0].message.content, "false");
+  } finally {
+    await noWorkspaceServer.stop();
+  }
 });
 
 test("lists cursor-agent models in OpenAI list format", async () => {
