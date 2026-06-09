@@ -174,14 +174,13 @@ describe("Competitive Edge Analysis", () => {
       expect(tool).toBeUndefined();
     });
 
-    it("should have CLI tool for model discovery", () => {
-      // Check package.json has discover script
+    it("should expose the agentproxy service CLI", () => {
       const packageJson = require("../../package.json");
 
-      expect(packageJson.scripts.discover).toBeDefined();
+      expect(packageJson.scripts.serve).toBeDefined();
+      expect(packageJson.scripts["docker:publish"]).toBeDefined();
       expect(packageJson.bin).toBeDefined();
-      expect(packageJson.bin["open-cursor"]).toBeDefined();
-      expect(packageJson.bin["cursor-discover"]).toBeDefined();
+      expect(packageJson.bin.agentproxy).toBe("dist/server/main.js");
     });
   });
 

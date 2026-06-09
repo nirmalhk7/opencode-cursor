@@ -44,8 +44,11 @@ export function resolveCursorAgentBinary(deps: BinaryDeps = {}): string {
   }
 
   const knownPaths = [
+    pathModule.join(home, ".local", "bin", "cursor-agent"),
+    pathModule.join(home, ".local", "bin", "agent"),
     pathModule.join(home, ".cursor-agent", "cursor-agent"),
     "/usr/local/bin/cursor-agent",
+    "/usr/local/bin/agent",
   ];
   for (const p of knownPaths) {
     if (checkExists(p)) {

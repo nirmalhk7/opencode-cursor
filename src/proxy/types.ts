@@ -3,6 +3,8 @@ export interface ProxyConfig {
   host?: string;
   healthCheckPath?: string;
   requestTimeout?: number;
+  workspaceDirectory?: string;
+  cursorAgentPath?: string;
 }
 
 export interface ProxyServer {

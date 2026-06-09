@@ -16,6 +16,17 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/index.ts",
+    "src/server/**/*.ts",
+    "src/proxy/server.ts",
+    "src/proxy/types.ts",
+    "src/proxy/formatter.ts",
+    "src/proxy/handler.ts",
+    "src/proxy/prompt-builder.ts",
+    "src/streaming/**/*.ts",
+    "src/usage.ts",
+    "src/utils/**/*.ts"
+  ],
   "exclude": ["node_modules", "tests"]
 }

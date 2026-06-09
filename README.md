@@ -1,237 +1,201 @@
-![header](docs/header.png)
+# agentproxy
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux" />
-  <img src="https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS" />
-  <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
-</p>
+OpenAI-compatible HTTP service backed by `cursor-agent`.
 
-No prompt limits. No broken streams. Full thinking + tool support in OpenCode. Your Cursor subscription, properly integrated.
+Agentproxy lets OpenAI-compatible clients talk to your Cursor subscription through the local Cursor CLI. It does not install or configure OpenCode plugins, MCP bridges, or tool runtimes.
 
-## Installation
+## Requirements
 
-### Option A — One-line installer
-
-**Linux & macOS:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/Nomadcxx/opencode-cursor/main/install.sh | bash
-```
-
-**Windows:**
-```powershell
-# Windows installer coming soon.
-# In the meantime, use Option C (npm install):
-npm install -g @rama_nigg/open-cursor
-open-cursor install
-```
-
-<details>
-<summary><b>Option B</b> — Add to opencode.json</summary>
-
-Add to `~/.config/opencode/opencode.json` (or `%USERPROFILE%\.config\opencode\opencode.json` on Windows):
-
-```json
-{
-  "plugin": ["@rama_nigg/open-cursor@latest"],
-  "provider": {
-    "cursor-acp": {
-      "name": "Cursor ACP",
-      "npm": "@ai-sdk/openai-compatible",
-      "options": {
-        "baseURL": "http://127.0.0.1:32124/v1"
-      },
-      "models": {
-        "cursor-acp/auto":              { "name": "Auto" },
-
-        "cursor-acp/claude-opus-4-7":   { "name": "Claude 4.7 Opus" },
-        "cursor-acp/claude-4.6-opus":   { "name": "Claude 4.6 Opus" },
-        "cursor-acp/claude-4.6-sonnet": { "name": "Claude 4.6 Sonnet" },
-        "cursor-acp/claude-4.5-opus":   { "name": "Claude 4.5 Opus" },
-        "cursor-acp/claude-4.5-sonnet": { "name": "Claude 4.5 Sonnet" },
-        "cursor-acp/claude-4.5-haiku":  { "name": "Claude 4.5 Haiku" },
-        "cursor-acp/claude-4-sonnet":   { "name": "Claude 4 Sonnet" },
-
-        "cursor-acp/gpt-5.5":           { "name": "GPT-5.5" },
-        "cursor-acp/gpt-5.4":           { "name": "GPT-5.4" },
-        "cursor-acp/gpt-5.4-mini":      { "name": "GPT-5.4 Mini" },
-        "cursor-acp/gpt-5.4-nano":      { "name": "GPT-5.4 Nano" },
-        "cursor-acp/gpt-5.3-codex":     { "name": "GPT-5.3 Codex" },
-        "cursor-acp/gpt-5.2":           { "name": "GPT-5.2" },
-        "cursor-acp/gpt-5.2-codex":     { "name": "GPT-5.2 Codex" },
-        "cursor-acp/gpt-5.1-codex":     { "name": "GPT-5.1 Codex" },
-        "cursor-acp/gpt-5.1-codex-max": { "name": "GPT-5.1 Codex Max" },
-        "cursor-acp/gpt-5.1-codex-mini":{ "name": "GPT-5.1 Codex Mini" },
-        "cursor-acp/gpt-5-mini":        { "name": "GPT-5 Mini" },
-
-        "cursor-acp/gemini-3.1-pro":    { "name": "Gemini 3.1 Pro" },
-        "cursor-acp/gemini-3-pro":      { "name": "Gemini 3 Pro" },
-        "cursor-acp/gemini-3-flash":    { "name": "Gemini 3 Flash" },
-
-        "cursor-acp/composer-2":        { "name": "Composer 2" },
-        "cursor-acp/composer-2-fast":   { "name": "Composer 2 Fast" },
-        "cursor-acp/composer-1.5":      { "name": "Composer 1.5" },
-
-        "cursor-acp/grok-4-20":         { "name": "Grok 4.20" },
-        "cursor-acp/kimi-k2.5":         { "name": "Kimi K2.5" }
-      }
-    }
-  }
-}
-```
-
-> **Refresh anytime** with the bundled CLI:
-> ```bash
-> open-cursor sync-models                       # plain list
-> open-cursor sync-models --variants --compact  # group thinking / fast / -low/-high variants under each base
-> ```
-> The `--variants --compact` form is recommended — it folds dozens of `*-thinking-fast`, `*-high-fast`, etc. into a single entry per family with a `variants` map, and includes `cost` from the official Cursor pricing table so OpenCode TokenSpeed can render usage correctly. Direct `cursor-agent models` still works if you prefer the raw list.
-</details>
-
-<details>
-<summary><b>Option C</b> — npm global + CLI</summary>
+- Node.js 22+
+- `cursor-agent` installed and available on `PATH`
+- Cursor authentication via:
 
 ```bash
-npm install -g @rama_nigg/open-cursor
-open-cursor install
+cursor-agent login
 ```
 
-Upgrade: `npm update -g @rama_nigg/open-cursor`
-</details>
+The HTTP `Authorization` header is accepted for OpenAI client compatibility, but real authentication is handled by `cursor-agent`.
 
-<details>
-<summary><b>Option D</b> — Go TUI installer</summary>
+## Install and run
+
+From source:
 
 ```bash
-git clone https://github.com/Nomadcxx/opencode-cursor.git
-cd opencode-cursor
-go build -o ./installer ./cmd/installer && ./installer
+npm install
+npm run build
+npm run serve -- --port 32124 --workspace "$PWD"
 ```
-</details>
 
-<details>
-<summary><b>Option E</b> — LLM paste</summary>
-
-```
-Install open-cursor for OpenCode: edit ~/.config/opencode/opencode.json, add "@rama_nigg/open-cursor@latest" to "plugin", add a "cursor-acp" provider with npm "@ai-sdk/openai-compatible" and a baseURL of http://127.0.0.1:32124/v1. Populate models by running `open-cursor sync-models --variants --compact` after install (or copy the model list from the README). Auth: `cursor-agent login`. Verify: `opencode models | grep cursor-acp`.
-```
-</details>
-
-<details>
-<summary><b>Option F</b> — Manual (from source)</summary>
+After build, the package binary starts the service:
 
 ```bash
-git clone https://github.com/Nomadcxx/opencode-cursor.git && cd opencode-cursor
-bun install && bun run build
-ln -sf $(pwd)/dist/plugin-entry.js ~/.config/opencode/plugin/cursor-acp.js
-./scripts/sync-models.sh
+agentproxy --port 32124 --workspace "$PWD"
 ```
 
-Add `"cursor-acp"` to the `plugin` array and reuse the provider block from Option B.
-</details>
+Default base URL:
 
-## Authentication
+```text
+http://127.0.0.1:32124/v1
+```
+
+## Endpoints
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/health` | Service health and workspace metadata |
+| `GET` | `/v1/models` | OpenAI model list from `cursor-agent models` |
+| `GET` | `/models` | Alias for `/v1/models` |
+| `POST` | `/v1/chat/completions` | OpenAI chat completions |
+| `POST` | `/chat/completions` | Alias for `/v1/chat/completions` |
+
+Supported chat behavior:
+
+- Non-streaming JSON chat completions
+- Streaming Server-Sent Events (`stream: true`)
+- `reasoning_content` deltas for Cursor thinking output
+- OpenAI-shaped `usage` when cursor-agent reports token usage
+- Function tool calls with OpenAI-compatible `tools`, `tool_choice`, `tool_calls`, `role: "tool"`, and `tool_call_id` follow-up turns
+- Streaming tool-call deltas with final `finish_reason: "tool_calls"`
+- `GET /v1/models/{id}` model lookup
+- Best-effort `max_completion_tokens` / `max_tokens` prompt guidance
+
+Tool compatibility notes:
+
+- `tools` must be an array of `{ "type": "function", "function": { "name": "...", ... } }`.
+- `tool_choice` supports `"auto"`, `"none"`, `"required"`, and pinned function choices such as `{ "type": "function", "function": { "name": "weather" } }`.
+- If a client provides tools, only matching cursor-agent tool events are exposed back as OpenAI tool calls.
+- With `tool_choice: "none"`, tool calls are suppressed.
+- With `tool_choice: "required"` or a pinned function, the service returns an error if cursor-agent does not produce the required tool call.
+
+## Example
 
 ```bash
-opencode auth login   # provider id: cursor-acp
-cursor-agent login    # direct
+curl http://127.0.0.1:32124/v1/chat/completions \
+  -H 'Authorization: Bearer ignored' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "auto",
+    "messages": [
+      { "role": "user", "content": "Say hello in one sentence." }
+    ]
+  }'
 ```
 
-## Usage
+Streaming:
 
 ```bash
-opencode run "your prompt" --model cursor-acp/auto
-opencode run "your prompt" --model cursor-acp/sonnet-4.5
+curl -N http://127.0.0.1:32124/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "auto",
+    "stream": true,
+    "messages": [
+      { "role": "user", "content": "Think briefly, then answer." }
+    ]
+  }'
 ```
 
-## MCP Tool Bridge
+## Configuration
 
-Any MCP servers already configured in your `opencode.json` work automatically with cursor-acp models — no extra setup needed. The plugin discovers them at startup and injects usage instructions into the system prompt so the model calls them via cursor-agent's Shell tool.
+CLI flags:
 
-`mcptool` is a shell CLI, so opencode applies your `bash` permission rules to `mcptool call ...`. If you rely on MCP tools asking for confirmation, keep `bash` as `ask` or add explicit `ask`/`deny` rules for `mcptool call *`.
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--host` | `127.0.0.1` | Host to bind |
+| `--port` | `32124` | Port to bind; falls back to another local port if busy |
+| `--workspace` | current directory | Workspace passed to `cursor-agent --workspace` |
+| `--cursor-agent` | resolved from `CURSOR_AGENT_EXECUTABLE` or `PATH` | Cursor agent executable |
+| `--request-timeout` | `0` | Request timeout in milliseconds; `0` disables |
+
+Environment variables:
+
+| Variable | Description |
+| --- | --- |
+| `HOST` | Default bind host |
+| `PORT` | Default bind port |
+| `CURSOR_ACP_WORKSPACE` | Default workspace |
+| `CURSOR_AGENT_EXECUTABLE` | Cursor agent executable path |
+| `CURSOR_ACP_REQUEST_TIMEOUT` | Default request timeout in milliseconds |
+| `CURSOR_ACP_LOG_LEVEL=debug` | Enable debug logging |
+
+## Docker image deployment
+
+Build and publish the service image to GitHub Packages / GitHub Container Registry:
 
 ```bash
-mcptool servers                                    # list discovered servers
-mcptool tools [server]                             # list available tools
-mcptool call hybrid-memory memory_stats            # call a tool manually
-mcptool call playwright browser_navigate '{"url":"https://example.com"}'
+GHCR_TOKEN=ghp_xxx npm run docker:publish
 ```
 
-Any MCP server using stdio transport works. Tested with hybrid-memory, @modelcontextprotocol/server-filesystem, @playwright/mcp, and @modelcontextprotocol/server-everything.
+The token must have `packages:write` permission. The script infers the default image from the GitHub remote, for example:
 
-## Architecture
-
-```mermaid
-flowchart TB
-    OC["OpenCode"] --> SDK["@ai-sdk/openai-compatible"]
-    SDK -->|"POST /v1/chat/completions"| PROXY["open-cursor proxy :32124"]
-    PROXY -->|"spawn per request"| AGENT["cursor-agent --output-format stream-json"]
-    AGENT -->|"HTTPS"| CURSOR["Cursor API"]
-    CURSOR --> AGENT
-
-    AGENT -->|"assistant / thinking events"| SSE["SSE content chunks"]
-    AGENT -->|"tool_call event"| BOUNDARY["Provider boundary (v1 default)"]
-    BOUNDARY --> COMPAT["Schema compat + alias normalization"]
-    COMPAT --> GUARD["Tool-loop guard"]
-    GUARD -->|"emit tool_calls + finish_reason=tool_calls"| SDK
-    SDK --> OC
-
-    OC -->|"execute tool locally"| TOOLRUN["OpenCode tool runtime"]
-    TOOLRUN -->|"next request includes role:tool result"| SDK
-    SDK -->|"TOOL_RESULT prompt block"| AGENT
-
-    AGENT -->|"Shell tool_call"| MCPTOOL["mcptool CLI"]
-    MCPTOOL -->|"stdio"| MCP["MCP Servers"]
-    MCP --> MCPTOOL
-    MCPTOOL --> AGENT
+```text
+ghcr.io/<owner>/<repo>
 ```
 
-Default mode: `CURSOR_ACP_TOOL_LOOP_MODE=opencode`. Details: [docs/architecture/runtime-tool-loop.md](docs/architecture/runtime-tool-loop.md).
+Published tags:
 
-## Alternatives
-THERE is currently not a single perfect plugin for cursor in opencode, my advice is stick with what is the LEAST worst option for you.
-|                   |        open-cursor         | [yet-another-opencode-cursor-auth](https://github.com/Yukaii/yet-another-opencode-cursor-auth) | [opencode-cursor-auth](https://github.com/POSO-PocketSolutions/opencode-cursor-auth) | [cursor-opencode-auth](https://github.com/R44VC0RP/cursor-opencode-auth) |
-| ----------------- | :------------------------: | :--------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------: |
-| **Architecture**  | HTTP proxy via cursor-agent |                                       Direct Connect-RPC                                       |                             HTTP proxy via cursor-agent                              |                       Direct Connect-RPC/protobuf                        |
-| **Platform**      |   Linux, macOS, Windows    |                                      Linux, macOS                                           |                                     Linux, macOS                                     |                          macOS only (Keychain)                           |
-| **Max Prompt**    |   Unlimited (HTTP body)    |                                            Unknown                                             |                                   ~128KB (ARG_MAX)                                   |                                 Unknown                                  |
-| **Streaming**     |           ✓ SSE            |                                             ✓ SSE                                              |                                     Undocumented                                     |                                    ✓                                     |
-| **Error Parsing** |   ✓ (quota/auth/model)     |                                               ✗                                                |                                          ✗                                           |                              Debug logging                               |
-| **Installer**     |     ✓ TUI + one-liner      |                                               ✗                                                |                                          ✗                                           |                                    ✗                                     |
-| **OAuth Flow**    |  ✓ OpenCode integration    |                                            ✓ Native                                            |                                    Browser login                                     |                                 Keychain                                 |
-| **Tool Calling**  | ✓ OpenCode-owned loop |                                            ✓ Native                                            |                                    ✓ Experimental                                    |                                    ✗                                     |
-| **MCP Bridge**    | ✓ mcptool CLI (any MCP server) |                                               ✗                                                |                                          ✗                                           |                                    ✗                                     |
-| **Stability**     | Stable (uses official CLI) |                                          Experimental                                          |                                        Stable                                        |                               Experimental                               |
-| **Dependencies**  |     bun, cursor-agent      |                                              npm                                               |                                  bun, cursor-agent                                   |                               Node.js 18+                                |
-| **Port**          |           32124            |                                             18741                                              |                                        32123                                         |                                   4141                                   |
+- `:<package.json version>`
+- `:sha-<git sha>`
+- `:latest`
 
-## Troubleshooting
+Options:
 
-- `fetch() URL is invalid` → `opencode auth login`
-- Model not responding → `cursor-agent login`
-- Quota exceeded → [cursor.com/settings](https://cursor.com/settings)
-- Auth failed → `CURSOR_ACP_LOG_LEVEL=debug opencode auth login cursor-acp`
-
-Debug logging: `CURSOR_ACP_LOG_LEVEL=debug opencode run "your prompt" --model cursor-acp/auto`
-
-## Roadmap
-
-```mermaid
-flowchart LR
-    P1[/Stabilise/] --> P2[/MCP Bridge/] --> P3[/Simplify/] --> P4[/ACP + MCP/]
-
-    style P1 fill:#264653,stroke:#1d3557,color:#fff
-    style P2 fill:#264653,stroke:#1d3557,color:#fff
-    style P3 fill:#495057,stroke:#343a40,color:#adb5bd
-    style P4 fill:#495057,stroke:#343a40,color:#adb5bd
+```bash
+scripts/deploy-ghcr.sh --image ghcr.io/acme/agentproxy --tag canary --no-latest
+scripts/deploy-ghcr.sh --platform linux/amd64,linux/arm64
+scripts/deploy-ghcr.sh --dry-run
 ```
 
-[X] **Stabilise** — Clean up dead code, fix test isolation
-[X] **MCP Bridge** — Bridge MCP servers into Cursor models via `mcptool` CLI
-[ ] **Simplify** — Rip out serialisation layers
-[ ] **ACP + MCP** — Structured protocols end-to-end
+The image includes the official Cursor CLI (`cursor-agent`) and starts the OpenAI-compatible service by default.
 
-`Future Architecture` — Long-term direction is `OpenCode -> Cursor ACP -> MCP`, using official Cursor ACP as the backend. Currently deferred: Cursor ACP does not yet reliably propagate MCP servers during ACP session setup. See [docs/architecture/cursor-acp-mcp-future.md](docs/architecture/cursor-acp-mcp-future.md).
+Unattended deployment should use a Cursor API key:
 
-## License
+```bash
+docker run --rm -p 32124:32124 \
+  -e CURSOR_API_KEY="$CURSOR_API_KEY" \
+  ghcr.io/<owner>/<repo>:latest
+```
 
-BSD-3-Clause
+Then verify the OpenAI-compatible models endpoint:
+
+```bash
+curl http://127.0.0.1:32124/v1/models
+```
+
+For browser-based login, run the image once with a persistent Cursor config volume. The login command prints a URL because the image sets `NO_OPEN_BROWSER=1`:
+
+```bash
+docker volume create agentproxy-auth
+docker run --rm -it \
+  -v agentproxy-auth:/root/.cursor \
+  ghcr.io/<owner>/<repo>:latest login
+
+docker run --rm -p 32124:32124 \
+  -v agentproxy-auth:/root/.cursor \
+  ghcr.io/<owner>/<repo>:latest
+```
+
+Useful image commands:
+
+```bash
+docker run --rm -e CURSOR_API_KEY="$CURSOR_API_KEY" ghcr.io/<owner>/<repo>:latest status
+docker run --rm -e CURSOR_API_KEY="$CURSOR_API_KEY" ghcr.io/<owner>/<repo>:latest models
+```
+
+## Development
+
+```bash
+npm install
+npm run build
+npm test
+```
+
+Coding-agent guidance lives in [`AGENTS.md`](AGENTS.md). It describes the active service files, legacy directories, validation commands, and OpenAI/OpenClaw compatibility expectations.
+
+The service implementation lives in:
+
+- `src/server/openai.ts` - OpenAI route handler and cursor-agent adapter
+- `src/server/main.ts` - CLI entry point
+- `src/proxy/server.ts` - reusable server lifecycle wrapper
+- `src/streaming/*` - cursor-agent stream-json parsing and OpenAI SSE conversion
+- `src/proxy/prompt-builder.ts` - OpenAI messages/tools to cursor-agent prompt text
