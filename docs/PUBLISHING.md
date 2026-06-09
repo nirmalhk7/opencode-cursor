@@ -54,9 +54,14 @@ The workflow in `.github/workflows/docker.yml` builds a single image that bundle
 
 Behavior:
 
-- pull requests and `main` pushes build and smoke-test the image locally in CI
-- `v*` release tags publish to GHCR with version, `sha-<git sha>`, and `latest` tags
+- pull requests build and smoke-test the image locally in CI (no GHCR push)
+- `main` pushes publish to GHCR with version, `sha-<git sha>`, and `latest` tags
+- `v*` release tags publish the same image tags after validating the tag matches `package.json`
 - manual `workflow_dispatch` can publish on demand when `publish` is enabled
+
+After the first publish, make the package public under GitHub Packages if you want anonymous pulls:
+
+`https://github.com/users/<owner>/packages/container/package/<repo>/settings`
 
 Publish locally with the deployment script:
 

@@ -70,7 +70,7 @@ jobs:
       - name: Decide publish mode
         id: publish
         run: |
-          if [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          if [ "${{ github.event_name }}" = "push" ] && { [[ "${{ github.ref }}" == refs/tags/v* ]] || [ "${{ github.ref }}" = "refs/heads/main" ]; }; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.publish }}" = "true" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
@@ -94,7 +94,7 @@ jobs:
           tags: |
             type=raw,value=${{ steps.version.outputs.value }},enable=${{ steps.publish.outputs.enabled == 'true' }}
             type=raw,value=sha-${{ steps.git.outputs.short }},enable=${{ steps.publish.outputs.enabled == 'true' }}
-            type=raw,value=latest,enable=${{ steps.publish.outputs.enabled == 'true' && startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=latest,enable=${{ steps.publish.outputs.enabled == 'true' }}
             type=raw,value=ci,enable=${{ steps.publish.outputs.enabled != 'true' }}
 
       - name: Resolve build platforms

@@ -76,6 +76,14 @@ test("GitHub workflows run the active Node validation path", () => {
   assert.match(docker, /docker\/build-push-action/);
   assert.match(docker, /cursor-agent --version/);
   assert.match(docker, /\/health/);
+  assert.match(docker, /refs\/heads\/main/);
+});
+
+test("publishing docs describe main-branch GHCR pushes", () => {
+  const publishing = readText("docs/PUBLISHING.md");
+
+  assert.match(publishing, /`main` pushes publish to GHCR/);
+  assert.doesNotMatch(publishing, /`main` pushes build and smoke-test/);
 });
 
 test("Dockerfile stages agentproxy and cursor-agent separately", () => {
