@@ -1,17 +1,24 @@
 import { execSync } from "node:child_process";
-import { createServer } from "node:net";
+import { createServer as createNetServer } from "node:net";
+import { createServer as createHttpServer, type Server } from "node:http";
 import { platform } from "node:os";
 import type { ProxyConfig, ProxyServer } from "./types.js";
 import { createLogger } from "../utils/logger.js";
+import { createOpenAiRequestHandler } from "../server/openai.js";
 
 const log = createLogger("proxy-server");
 
 const DEFAULT_PORT = 32124;
 const PORT_RANGE_SIZE = 256;
 
+function readHttpServerPort(server: Server | null): number | null {
+  const address = server?.address();
+  return typeof address === "object" && address ? address.port : null;
+}
+
 async function isPortAvailable(port: number, host: string): Promise<boolean> {
   return await new Promise<boolean>((resolve) => {
-    const server = createServer();
+    const server = createNetServer();
     server.unref();
 
     server.once("error", () => {
@@ -102,37 +109,22 @@ export async function findAvailablePort(host = "127.0.0.1"): Promise<number> {
 export function createProxyServer(config: ProxyConfig): ProxyServer {
   const requestedPort = config.port ?? 0;
   const host = config.host ?? "127.0.0.1";
-  const healthCheckPath = config.healthCheckPath ?? "/health";
 
-  let server: any = null;
+  let server: Server | null = null;
   let baseURL = requestedPort > 0 ? `http://${host}:${requestedPort}/v1` : "";
-
-  const bunAny = (globalThis as any).Bun;
-
-  // Check Bun runtime availability
-  if (!bunAny || typeof bunAny.serve !== "function") {
-    throw new Error(
-      `Proxy server requires Bun runtime. Current runtime: ${typeof process !== "undefined" ? "Node.js" : "unknown"}. ` +
-      `Please run with Bun.`
-    );
-  }
 
   const tryStart = (port: number): { success: boolean; error?: Error } => {
     try {
-      server = bunAny.serve({
+      const nextServer = createHttpServer(createOpenAiRequestHandler({
+        workspaceDirectory: config.workspaceDirectory,
+        cursorAgentPath: config.cursorAgentPath,
+        requestTimeout: config.requestTimeout,
+      }));
+      nextServer.listen({
         port,
-        hostname: host,
-        fetch(request: Request): Response | Promise<Response> {
-          const url = new URL(request.url);
-          const path = url.pathname;
-
-          if (path === healthCheckPath && request.method === "GET") {
-            return Response.json({ ok: true });
-          }
-
-          return new Response("Not Found", { status: 404 });
-        },
+        host,
       });
+      server = nextServer;
       return { success: true };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -155,7 +147,7 @@ export function createProxyServer(config: ProxyConfig): ProxyServer {
 
       let port: number;
       if (requestedPort > 0) {
-        const result = tryStart(requestedPort);
+        const result = await listenOnPort(requestedPort);
         if (result.success) {
           port = requestedPort;
         } else {
@@ -163,7 +155,7 @@ export function createProxyServer(config: ProxyConfig): ProxyServer {
             `Requested port ${requestedPort} unavailable: ${result.error?.message ?? "unknown"}. Falling back to automatic port selection.`
           );
           port = await findAvailablePort(host);
-          const fallbackResult = tryStart(port);
+          const fallbackResult = await listenOnPort(port);
           if (!fallbackResult.success) {
             throw new Error(
               `Failed to start server on port ${requestedPort} (${result.error?.message ?? "unknown"}) ` +
@@ -174,13 +166,13 @@ export function createProxyServer(config: ProxyConfig): ProxyServer {
         }
       } else {
         port = await findAvailablePort(host);
-        const result = tryStart(port);
+        const result = await listenOnPort(port);
         if (!result.success) {
           throw new Error(`Failed to start server on port ${port}: ${result.error?.message ?? "unknown"}`);
         }
       }
 
-      const actualPort = server.port ?? port ?? DEFAULT_PORT;
+      const actualPort = readHttpServerPort(server) ?? port ?? DEFAULT_PORT;
       baseURL = `http://${host}:${actualPort}/v1`;
       return baseURL;
     },
@@ -190,10 +182,18 @@ export function createProxyServer(config: ProxyConfig): ProxyServer {
         return Promise.resolve();
       }
 
-      server.stop(true);
-      server = null;
-      baseURL = "";
-      return Promise.resolve();
+      const current = server;
+      return new Promise((resolve, reject) => {
+        current.close((error) => {
+          server = null;
+          baseURL = "";
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
+      });
     },
 
     getBaseURL(): string {
@@ -201,7 +201,33 @@ export function createProxyServer(config: ProxyConfig): ProxyServer {
     },
 
     getPort(): number | null {
-      return server?.port ?? null;
+      return readHttpServerPort(server);
     },
   };
+
+  async function listenOnPort(port: number): Promise<{ success: boolean; error?: Error }> {
+    const result = tryStart(port);
+    if (!result.success || !server) {
+      return result;
+    }
+
+    return await new Promise((resolve) => {
+      const current = server!;
+      const onListening = () => {
+        cleanup();
+        resolve({ success: true });
+      };
+      const onError = (error: Error) => {
+        cleanup();
+        server = null;
+        resolve({ success: false, error });
+      };
+      const cleanup = () => {
+        current.off("listening", onListening);
+        current.off("error", onError);
+      };
+      current.once("listening", onListening);
+      current.once("error", onError);
+    });
+  }
 }

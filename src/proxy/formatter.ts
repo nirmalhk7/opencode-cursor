@@ -1,9 +1,21 @@
 import type { OpenAiUsage } from "../usage.js";
 
+export type OpenAiToolCall = {
+  index: number;
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+};
+
 export function createChatCompletionResponse(
   model: string,
   content: string,
+  reasoningContent?: string,
   usage?: OpenAiUsage,
+  toolCalls: OpenAiToolCall[] = [],
 ) {
   const response: {
     id: string;
@@ -12,7 +24,12 @@ export function createChatCompletionResponse(
     model: string;
     choices: Array<{
       index: number;
-      message: { role: string; content: string };
+      message: {
+        role: string;
+        content: string;
+        reasoning_content?: string;
+        tool_calls?: OpenAiToolCall[];
+      };
       finish_reason: string;
     }>;
     usage?: OpenAiUsage;
@@ -20,15 +37,23 @@ export function createChatCompletionResponse(
     id: `cursor-acp-${Date.now()}`,
     object: "chat.completion",
     created: Math.floor(Date.now() / 1000),
-    model: `cursor-acp/${model}`,
+    model,
     choices: [
       {
         index: 0,
         message: { role: "assistant", content },
-        finish_reason: "stop",
+        finish_reason: toolCalls.length > 0 ? "tool_calls" : "stop",
       }
     ],
   };
+
+  if (reasoningContent) {
+    response.choices[0].message.reasoning_content = reasoningContent;
+  }
+
+  if (toolCalls.length > 0) {
+    response.choices[0].message.tool_calls = toolCalls;
+  }
 
   if (usage) {
     response.usage = usage;
@@ -48,7 +73,7 @@ export function createChatCompletionChunk(
     id,
     object: "chat.completion.chunk",
     created,
-    model: `cursor-acp/${model}`,
+    model,
     choices: [
       {
         index: 0,

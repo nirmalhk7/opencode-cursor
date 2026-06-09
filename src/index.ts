@@ -1,15 +1,14 @@
-export { CursorPlugin } from "./plugin.js";
-export { createCursorProvider, cursor } from "./provider.js";
-export type { ProviderOptions } from "./provider.js";
 export { createProxyServer, findAvailablePort } from "./proxy/server.js";
+export type { ProxyConfig, ProxyServer } from "./proxy/types.js";
+export {
+  createOpenAiRequestHandler,
+  extractCompletionFromStream,
+} from "./server/openai.js";
+export type { OpenAiServiceOptions } from "./server/openai.js";
 export { parseOpenAIRequest } from "./proxy/handler.js";
 export type { ParsedRequest } from "./proxy/handler.js";
 export { createChatCompletionResponse, createChatCompletionChunk } from "./proxy/formatter.js";
-// DO NOT export startCursorOAuth - it causes OpenCode to auto-trigger auth
-export { verifyCursorAuth } from "./auth.js";
-export type { AuthResult } from "./auth.js";
-export { checkAuthStatus, formatStatusOutput } from "./commands/status";
-export type { AuthStatus } from "./commands/status";
+export type { OpenAiToolCall } from "./proxy/formatter.js";
 
 // Utilities
 export { createLogger } from "./utils/logger";
@@ -32,9 +31,3 @@ export type {
   StreamJsonToolCallEvent,
   StreamJsonUserEvent,
 } from "./streaming/types.js";
-
-// Default export for OpenCode plugin usage
-export { CursorPlugin as default } from "./plugin.js";
-
-// Backward compatibility
-export { default as createCursorProviderCompat } from "./provider.js";
