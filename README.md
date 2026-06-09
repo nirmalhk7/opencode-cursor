@@ -54,7 +54,18 @@ Supported chat behavior:
 - Streaming Server-Sent Events (`stream: true`)
 - `reasoning_content` deltas for Cursor thinking output
 - OpenAI-shaped `usage` when cursor-agent reports token usage
-- Tool-call deltas are passed through when cursor-agent emits tool call events
+- Function tool calls with OpenAI-compatible `tools`, `tool_choice`, `tool_calls`, `role: "tool"`, and `tool_call_id` follow-up turns
+- Streaming tool-call deltas with final `finish_reason: "tool_calls"`
+- `GET /v1/models/{id}` model lookup
+- Best-effort `max_completion_tokens` / `max_tokens` prompt guidance
+
+Tool compatibility notes:
+
+- `tools` must be an array of `{ "type": "function", "function": { "name": "...", ... } }`.
+- `tool_choice` supports `"auto"`, `"none"`, `"required"`, and pinned function choices such as `{ "type": "function", "function": { "name": "weather" } }`.
+- If a client provides tools, only matching cursor-agent tool events are exposed back as OpenAI tool calls.
+- With `tool_choice: "none"`, tool calls are suppressed.
+- With `tool_choice: "required"` or a pinned function, the service returns an error if cursor-agent does not produce the required tool call.
 
 ## Example
 

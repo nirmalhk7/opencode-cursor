@@ -12,7 +12,7 @@ export type OpenAiToolCall = {
 
 export function createChatCompletionResponse(
   model: string,
-  content: string,
+  content: string | null,
   reasoningContent?: string,
   usage?: OpenAiUsage,
   toolCalls: OpenAiToolCall[] = [],
@@ -26,7 +26,7 @@ export function createChatCompletionResponse(
       index: number;
       message: {
         role: string;
-        content: string;
+        content: string | null;
         reasoning_content?: string;
         tool_calls?: OpenAiToolCall[];
       };
@@ -68,6 +68,7 @@ export function createChatCompletionChunk(
   model: string,
   deltaContent: string,
   done = false,
+  finishReason = "stop",
 ) {
   return {
     id,
@@ -78,8 +79,28 @@ export function createChatCompletionChunk(
       {
         index: 0,
         delta: deltaContent ? { content: deltaContent } : {},
-        finish_reason: done ? "stop" : null,
+        finish_reason: done ? finishReason : null,
       }
+    ],
+  };
+}
+
+export function createChatCompletionRoleChunk(
+  id: string,
+  created: number,
+  model: string,
+) {
+  return {
+    id,
+    object: "chat.completion.chunk",
+    created,
+    model,
+    choices: [
+      {
+        index: 0,
+        delta: { role: "assistant" },
+        finish_reason: null,
+      },
     ],
   };
 }
