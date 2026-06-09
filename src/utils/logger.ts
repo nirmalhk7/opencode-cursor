@@ -109,6 +109,10 @@ function writeToFile(message: string): void {
   }
 }
 
+export function isDebugEnabled(): boolean {
+  return shouldLog("debug");
+}
+
 export interface Logger {
   debug: (message: string, data?: unknown) => void;
   info: (message: string, data?: unknown) => void;

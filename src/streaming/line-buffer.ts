@@ -1,5 +1,5 @@
 export class LineBuffer {
-  private buffer = "";
+  private pendingParts: string[] = [];
   private decoder = new TextDecoder();
 
   push(chunk: string | Uint8Array): string[] {
@@ -8,37 +8,71 @@ export class LineBuffer {
       return [];
     }
 
-    this.buffer += text;
-    const lines = this.buffer.split("\n");
-    this.buffer = lines.pop() ?? "";
-
-    const completed: string[] = [];
-    for (const line of lines) {
-      const normalized = line.endsWith("\r") ? line.slice(0, -1) : line;
-      if (!normalized.trim()) {
-        continue;
-      }
-      completed.push(normalized);
-    }
-
-    return completed;
-  }
-
-  flush(): string[] {
-    if (!this.buffer.trim()) {
-      this.buffer = "";
+    if (!text.includes("\n")) {
+      this.appendPending(text);
       return [];
     }
 
-    const normalized = this.buffer.endsWith("\r")
-      ? this.buffer.slice(0, -1)
-      : this.buffer;
-    this.buffer = "";
+    const input = this.takePending() + text;
+    return this.extractCompletedLines(input);
+  }
+
+  flush(): string[] {
+    const remainder = this.takePending();
+    if (!remainder.trim()) {
+      return [];
+    }
+
+    const normalized = remainder.endsWith("\r")
+      ? remainder.slice(0, -1)
+      : remainder;
 
     if (!normalized.trim()) {
       return [];
     }
 
     return [normalized];
+  }
+
+  private appendPending(text: string): void {
+    this.pendingParts.push(text);
+  }
+
+  private takePending(): string {
+    if (this.pendingParts.length === 0) {
+      return "";
+    }
+
+    const joined = this.pendingParts.length === 1
+      ? this.pendingParts[0]
+      : this.pendingParts.join("");
+    this.pendingParts = [];
+    return joined;
+  }
+
+  private extractCompletedLines(input: string): string[] {
+    const completed: string[] = [];
+    let lineStart = 0;
+
+    for (let i = 0; i < input.length; i++) {
+      if (input.charCodeAt(i) !== 10) {
+        continue;
+      }
+
+      let line = input.slice(lineStart, i);
+      if (line.endsWith("\r")) {
+        line = line.slice(0, -1);
+      }
+      if (line.trim()) {
+        completed.push(line);
+      }
+      lineStart = i + 1;
+    }
+
+    if (lineStart < input.length) {
+      this.appendPending(input.slice(lineStart));
+    }
+
+    return completed;
   }
 }

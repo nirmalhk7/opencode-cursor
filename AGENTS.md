@@ -13,7 +13,7 @@ The active build surface is intentionally small:
 - `src/proxy/prompt-builder.ts` - OpenAI messages/tools to cursor-agent prompt text
 - `src/streaming/*` - cursor-agent stream-json parsing and SSE conversion
 - `Dockerfile`, `docker-entrypoint.sh`, `scripts/deploy-ghcr.sh` - container and GHCR deployment
-- `tests/*.test.mjs` - active Node test suite
+- `tests/*.test.mjs` - active Node test suite (`openai-service`, `streaming`, `prompt-builder`, `performance`, `project-docs`)
 
 The repository still contains historical OpenCode plugin and MCP bridge code under `src/plugin*`, `src/cli`, `src/mcp`, `src/tools`, and many older Bun tests. Treat those as legacy context unless a task explicitly asks to revive or migrate them.
 

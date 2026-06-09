@@ -717,6 +717,7 @@ async function handleStreamingChat(
   let childExitCode: number | null = null;
   let spawnError: string | null = null;
   const chunkQueue: Buffer[] = [];
+  let chunkQueueReadIndex = 0;
   let draining = false;
 
   const endStream = () => {
@@ -823,14 +824,22 @@ async function handleStreamingChat(
     endStream();
   };
 
+  const compactChunkQueue = () => {
+    if (chunkQueueReadIndex === 0 || chunkQueueReadIndex < 64) {
+      return;
+    }
+    chunkQueue.splice(0, chunkQueueReadIndex);
+    chunkQueueReadIndex = 0;
+  };
+
   const drainQueue = () => {
     if (draining) {
       return;
     }
     draining = true;
     try {
-      while (chunkQueue.length > 0 && !streamEnded && !res.writableEnded) {
-        const chunk = chunkQueue.shift()!;
+      while (chunkQueueReadIndex < chunkQueue.length && !streamEnded && !res.writableEnded) {
+        const chunk = chunkQueue[chunkQueueReadIndex++];
         for (const line of lineBuffer.push(chunk)) {
           const event = parseStreamJsonLine(line);
           if (event) {
@@ -838,6 +847,7 @@ async function handleStreamingChat(
           }
         }
       }
+      compactChunkQueue();
       finishIfClosed();
     } finally {
       draining = false;
@@ -845,7 +855,7 @@ async function handleStreamingChat(
   };
 
   child.stdout.on("data", (chunk) => {
-    chunkQueue.push(Buffer.from(chunk));
+    chunkQueue.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     drainQueue();
   });
 
