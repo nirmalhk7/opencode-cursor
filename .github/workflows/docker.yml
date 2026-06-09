@@ -128,15 +128,24 @@ jobs:
           cache-from: type=gha,scope=agentproxy
           cache-to: type=gha,mode=max,scope=agentproxy
 
+      - name: Resolve smoke test image
+        id: smoke
+        if: steps.publish.outputs.enabled != 'true'
+        run: |
+          repo="$(printf '%s' "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')"
+          echo "ref=${{ env.REGISTRY }}/${repo}:ci" >> "$GITHUB_OUTPUT"
+
       - name: Smoke test image
         if: steps.publish.outputs.enabled != 'true'
+        env:
+          SMOKE_IMAGE: ${{ steps.smoke.outputs.ref }}
         run: |
           set -euo pipefail
 
-          docker run --rm agentproxy:ci cursor-agent --version
-          docker run --rm agentproxy:ci node --version
+          docker run --rm "$SMOKE_IMAGE" cursor-agent --version
+          docker run --rm "$SMOKE_IMAGE" node --version
 
-          container_id="$(docker run -d -p 32124:32124 agentproxy:ci)"
+          container_id="$(docker run -d -p 32124:32124 "$SMOKE_IMAGE")"
           cleanup() {
             docker rm -f "$container_id" >/dev/null 2>&1 || true
           }
