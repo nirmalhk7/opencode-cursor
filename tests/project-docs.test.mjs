@@ -20,7 +20,9 @@ test("README documents current agentproxy commands and auth flow", () => {
   const readme = readText("README.md");
 
   assert.match(readme, /^# agentproxy/m);
-  assert.match(readme, /agentproxy --port 32124 --workspace/);
+  assert.match(readme, /agentproxy --port 32124/);
+  assert.match(readme, /directory\/project context should be managed at the OpenClaw layer/);
+  assert.match(readme, /only forwards `--workspace`/);
   assert.match(readme, /ghcr\.io\/acme\/agentproxy/);
   assert.match(readme, /agentproxy-auth/);
   assert.doesNotMatch(readme, /open-cursor/);

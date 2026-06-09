@@ -13,12 +13,12 @@ function printHelp() {
   console.log(`agentproxy OpenAI-compatible service
 
 Usage:
-  agentproxy [--host 127.0.0.1] [--port 32124] [--workspace /path/to/workspace]
+  agentproxy [--host 127.0.0.1] [--port 32124] [--workspace /optional/path]
 
 Environment:
   HOST                       Host to bind (default: 127.0.0.1)
   PORT                       Port to bind (default: 32124, falls back if busy)
-  CURSOR_ACP_WORKSPACE       Workspace passed to cursor-agent
+  CURSOR_ACP_WORKSPACE       Optional workspace forwarded to cursor-agent
   CURSOR_AGENT_EXECUTABLE    cursor-agent executable path
   CURSOR_ACP_REQUEST_TIMEOUT Request timeout in milliseconds (0 disables)
 
