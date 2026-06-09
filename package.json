@@ -1,5 +1,5 @@
 {
-  "name": "@rama_nigg/open-cursor",
+  "name": "agentproxy",
   "version": "2.4.6",
   "description": "OpenAI-compatible HTTP service backed by cursor-agent.",
   "type": "module",
@@ -16,7 +16,7 @@
     "prepublishOnly": "npm run build"
   },
   "bin": {
-    "open-cursor": "dist/server/main.js"
+    "agentproxy": "dist/server/main.js"
   },
   "exports": {
     ".": {

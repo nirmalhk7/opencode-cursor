@@ -1,8 +1,8 @@
-# open-cursor
+# agentproxy
 
 OpenAI-compatible HTTP service backed by `cursor-agent`.
 
-This service lets OpenAI-compatible clients talk to your Cursor subscription through the local Cursor CLI. It does not install or configure OpenCode plugins, MCP bridges, or tool runtimes.
+Agentproxy lets OpenAI-compatible clients talk to your Cursor subscription through the local Cursor CLI. It does not install or configure OpenCode plugins, MCP bridges, or tool runtimes.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ npm run serve -- --port 32124 --workspace "$PWD"
 After build, the package binary starts the service:
 
 ```bash
-open-cursor --port 32124 --workspace "$PWD"
+agentproxy --port 32124 --workspace "$PWD"
 ```
 
 Default base URL:
@@ -141,7 +141,7 @@ Published tags:
 Options:
 
 ```bash
-scripts/deploy-ghcr.sh --image ghcr.io/acme/open-cursor --tag canary --no-latest
+scripts/deploy-ghcr.sh --image ghcr.io/acme/agentproxy --tag canary --no-latest
 scripts/deploy-ghcr.sh --platform linux/amd64,linux/arm64
 scripts/deploy-ghcr.sh --dry-run
 ```
@@ -165,13 +165,13 @@ curl http://127.0.0.1:32124/v1/models
 For browser-based login, run the image once with a persistent Cursor config volume. The login command prints a URL because the image sets `NO_OPEN_BROWSER=1`:
 
 ```bash
-docker volume create open-cursor-auth
+docker volume create agentproxy-auth
 docker run --rm -it \
-  -v open-cursor-auth:/root/.cursor \
+  -v agentproxy-auth:/root/.cursor \
   ghcr.io/<owner>/<repo>:latest login
 
 docker run --rm -p 32124:32124 \
-  -v open-cursor-auth:/root/.cursor \
+  -v agentproxy-auth:/root/.cursor \
   ghcr.io/<owner>/<repo>:latest
 ```
 

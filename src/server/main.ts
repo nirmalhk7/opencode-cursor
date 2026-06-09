@@ -10,10 +10,10 @@ type ServeArgs = {
 };
 
 function printHelp() {
-  console.log(`open-cursor OpenAI-compatible service
+  console.log(`agentproxy OpenAI-compatible service
 
 Usage:
-  open-cursor [--host 127.0.0.1] [--port 32124] [--workspace /path/to/workspace]
+  agentproxy [--host 127.0.0.1] [--port 32124] [--workspace /path/to/workspace]
 
 Environment:
   HOST                       Host to bind (default: 127.0.0.1)

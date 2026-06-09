@@ -875,7 +875,7 @@ export function createOpenAiRequestHandler(serviceOptions: OpenAiServiceOptions 
         }
         writeJson(res, 200, {
           ok: true,
-          service: "openai-compatible-cursor",
+          service: "agentproxy",
           workspaceDirectory: options.workspaceDirectory,
         });
         return;

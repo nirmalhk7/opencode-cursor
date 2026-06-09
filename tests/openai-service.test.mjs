@@ -7,7 +7,7 @@ import { after, before, test } from "node:test";
 import { createProxyServer } from "../dist/proxy/server.js";
 
 function createFakeCursorAgent() {
-  const dir = mkdtempSync(join(tmpdir(), "open-cursor-test-"));
+  const dir = mkdtempSync(join(tmpdir(), "agentproxy-test-"));
   const agentPath = join(dir, "cursor-agent");
   writeFileSync(
     agentPath,
@@ -60,7 +60,7 @@ test("serves health metadata", async () => {
 
   const body = await response.json();
   assert.equal(body.ok, true);
-  assert.equal(body.service, "openai-compatible-cursor");
+  assert.equal(body.service, "agentproxy");
   assert.equal(body.workspaceDirectory, "/tmp");
 });
 

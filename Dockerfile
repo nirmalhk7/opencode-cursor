@@ -30,13 +30,13 @@ RUN apt-get update \
   && curl https://cursor.com/install -fsS | bash \
   && cursor-agent --version
 
-COPY docker-entrypoint.sh /usr/local/bin/open-cursor-entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/agentproxy-entrypoint
 
-RUN chmod +x /usr/local/bin/open-cursor-entrypoint
+RUN chmod +x /usr/local/bin/agentproxy-entrypoint
 
 VOLUME ["/root/.cursor"]
 
 EXPOSE 32124
 
-ENTRYPOINT ["open-cursor-entrypoint"]
+ENTRYPOINT ["agentproxy-entrypoint"]
 CMD ["serve"]

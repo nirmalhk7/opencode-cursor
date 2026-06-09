@@ -30,7 +30,7 @@ Environment:
 
 Examples:
   GHCR_TOKEN=ghp_xxx scripts/deploy-ghcr.sh
-  scripts/deploy-ghcr.sh --image ghcr.io/acme/open-cursor --tag canary --no-latest
+  scripts/deploy-ghcr.sh --image ghcr.io/acme/agentproxy --tag canary --no-latest
 USAGE
 }
 
