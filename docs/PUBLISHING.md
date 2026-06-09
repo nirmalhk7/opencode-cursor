@@ -47,7 +47,18 @@ If you need a non-publish validation run, execute the same build/test steps loca
 
 ## GitHub Container Registry
 
-Publish the Docker image to GHCR:
+The workflow in `.github/workflows/docker.yml` builds a single image that bundles:
+
+- the compiled `agentproxy` service
+- the official `cursor-agent` CLI from `https://cursor.com/install`
+
+Behavior:
+
+- pull requests and `main` pushes build and smoke-test the image locally in CI
+- `v*` release tags publish to GHCR with version, `sha-<git sha>`, and `latest` tags
+- manual `workflow_dispatch` can publish on demand when `publish` is enabled
+
+Publish locally with the deployment script:
 
 ```bash
 GHCR_TOKEN=ghp_xxx npm run docker:publish

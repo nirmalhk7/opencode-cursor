@@ -1,0 +1,178 @@
+name: Docker
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Push the image to GHCR"
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        description: "Target platforms (comma-separated)"
+        required: false
+        default: "linux/amd64,linux/arm64"
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Resolve package version
+        id: version
+        run: echo "value=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve git sha
+        id: git
+        run: echo "short=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve build timestamp
+        id: date
+        run: echo "value=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release tag
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="${{ steps.version.outputs.value }}"
+          echo "tag=$TAG_VERSION package=$PKG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag version and package.json version must match"
+            exit 1
+          fi
+
+      - name: Decide publish mode
+        id: publish
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.publish }}" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Log in to GHCR
+        if: steps.publish.outputs.enabled == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.value }},enable=${{ steps.publish.outputs.enabled == 'true' }}
+            type=raw,value=sha-${{ steps.git.outputs.short }},enable=${{ steps.publish.outputs.enabled == 'true' }}
+            type=raw,value=latest,enable=${{ steps.publish.outputs.enabled == 'true' && startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=ci,enable=${{ steps.publish.outputs.enabled != 'true' }}
+
+      - name: Resolve build platforms
+        id: platforms
+        run: |
+          if [ "${{ steps.publish.outputs.enabled }}" = "true" ]; then
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "value=${{ inputs.platforms }}" >> "$GITHUB_OUTPUT"
+            else
+              echo "value=linux/amd64,linux/arm64" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "value=linux/amd64" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ steps.platforms.outputs.value }}
+          push: ${{ steps.publish.outputs.enabled == 'true' }}
+          load: ${{ steps.publish.outputs.enabled != 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.value }}
+            VCS_REF=${{ github.sha }}
+            BUILD_DATE=${{ steps.date.outputs.value }}
+          cache-from: type=gha,scope=agentproxy
+          cache-to: type=gha,mode=max,scope=agentproxy
+
+      - name: Resolve smoke test image
+        id: smoke
+        if: steps.publish.outputs.enabled != 'true'
+        run: |
+          repo="$(printf '%s' "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')"
+          echo "ref=${{ env.REGISTRY }}/${repo}:ci" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test image
+        if: steps.publish.outputs.enabled != 'true'
+        env:
+          SMOKE_IMAGE: ${{ steps.smoke.outputs.ref }}
+        run: |
+          set -euo pipefail
+
+          docker run --rm "$SMOKE_IMAGE" cursor-agent --version
+          docker run --rm "$SMOKE_IMAGE" node --version
+
+          container_id="$(docker run -d -p 32124:32124 "$SMOKE_IMAGE")"
+          cleanup() {
+            docker rm -f "$container_id" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:32124/health >/dev/null; then
+              echo "Health check passed on attempt ${attempt}"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "Timed out waiting for /health"
+          docker logs "$container_id" || true
+          exit 1
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## agentproxy docker job"
+            echo "- Status: \`${{ job.status }}\`"
+            echo "- Publish: \`${{ steps.publish.outputs.enabled }}\`"
+            echo "- Platforms: \`${{ steps.platforms.outputs.value }}\`"
+            echo "- Tags: \`${{ steps.meta.outputs.tags }}\`"
+            if [ -n "${{ steps.build.outputs.digest }}" ]; then
+              echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
