@@ -64,6 +64,7 @@ test("documentation index and publishing docs point at current workflows", () =>
 test("GitHub workflows run the active Node validation path", () => {
   const ci = readText(".github/workflows/ci.yml");
   const publish = readText(".github/workflows/publish.yml");
+  const docker = readText(".github/workflows/docker.yml");
 
   assert.match(ci, /npm ci/);
   assert.match(ci, /npm test/);
@@ -72,4 +73,18 @@ test("GitHub workflows run the active Node validation path", () => {
   assert.match(publish, /npm test/);
   assert.doesNotMatch(ci, /bun run/);
   assert.doesNotMatch(publish, /bun run/);
+  assert.match(docker, /docker\/build-push-action/);
+  assert.match(docker, /cursor-agent --version/);
+  assert.match(docker, /\/health/);
+});
+
+test("Dockerfile stages agentproxy and cursor-agent separately", () => {
+  const dockerfile = readText("Dockerfile");
+
+  assert.match(dockerfile, /AS deps/);
+  assert.match(dockerfile, /AS build/);
+  assert.match(dockerfile, /AS cursor-agent/);
+  assert.match(dockerfile, /AS runtime/);
+  assert.match(dockerfile, /COPY --from=cursor-agent/);
+  assert.match(dockerfile, /CURSOR_INSTALL_URL/);
 });

@@ -182,7 +182,17 @@ if [ "$LOGIN" = "true" ]; then
   fi
 fi
 
-build_args=(docker buildx build --platform "$PLATFORMS" --push)
+BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+VCS_REF="$(git rev-parse HEAD)"
+
+build_args=(
+  docker buildx build
+  --platform "$PLATFORMS"
+  --push
+  --build-arg "VERSION=$VERSION"
+  --build-arg "VCS_REF=$VCS_REF"
+  --build-arg "BUILD_DATE=$BUILD_DATE"
+)
 for tag in "${TAGS[@]}"; do
   build_args+=(--tag "$IMAGE:$tag")
 done
@@ -194,7 +204,12 @@ elif docker buildx version >/dev/null 2>&1; then
   run "${build_args[@]}"
 else
   [ "$PLATFORMS" = "linux/amd64" ] || die "docker buildx is required for multi-platform builds"
-  build_args=(docker build)
+  build_args=(
+    docker build
+    --build-arg "VERSION=$VERSION"
+    --build-arg "VCS_REF=$VCS_REF"
+    --build-arg "BUILD_DATE=$BUILD_DATE"
+  )
   for tag in "${TAGS[@]}"; do
     build_args+=(--tag "$IMAGE:$tag")
   done
