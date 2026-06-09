@@ -135,7 +135,41 @@ scripts/deploy-ghcr.sh --platform linux/amd64,linux/arm64
 scripts/deploy-ghcr.sh --dry-run
 ```
 
-The image contains the OpenAI-compatible Node service. Provide `cursor-agent` at runtime by extending the image or mounting the executable and setting `CURSOR_AGENT_EXECUTABLE`.
+The image includes the official Cursor CLI (`cursor-agent`) and starts the OpenAI-compatible service by default.
+
+Unattended deployment should use a Cursor API key:
+
+```bash
+docker run --rm -p 32124:32124 \
+  -e CURSOR_API_KEY="$CURSOR_API_KEY" \
+  ghcr.io/<owner>/<repo>:latest
+```
+
+Then verify the OpenAI-compatible models endpoint:
+
+```bash
+curl http://127.0.0.1:32124/v1/models
+```
+
+For browser-based login, run the image once with a persistent Cursor config volume. The login command prints a URL because the image sets `NO_OPEN_BROWSER=1`:
+
+```bash
+docker volume create open-cursor-auth
+docker run --rm -it \
+  -v open-cursor-auth:/root/.cursor \
+  ghcr.io/<owner>/<repo>:latest login
+
+docker run --rm -p 32124:32124 \
+  -v open-cursor-auth:/root/.cursor \
+  ghcr.io/<owner>/<repo>:latest
+```
+
+Useful image commands:
+
+```bash
+docker run --rm -e CURSOR_API_KEY="$CURSOR_API_KEY" ghcr.io/<owner>/<repo>:latest status
+docker run --rm -e CURSOR_API_KEY="$CURSOR_API_KEY" ghcr.io/<owner>/<repo>:latest models
+```
 
 ## Development
 

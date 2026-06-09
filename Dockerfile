@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:22-bookworm-slim AS build
 
 WORKDIR /app
 
@@ -8,19 +8,35 @@ COPY src ./src
 RUN npm ci
 RUN npm run build
 
-FROM node:22-alpine AS runtime
+FROM node:22-bookworm-slim AS runtime
 
 ENV HOST=0.0.0.0
 ENV PORT=32124
 ENV NODE_ENV=production
+ENV PATH=/root/.local/bin:$PATH
+ENV CURSOR_AGENT_EXECUTABLE=/root/.local/bin/cursor-agent
+ENV NO_OPEN_BROWSER=1
 
 WORKDIR /app
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/dist ./dist
 
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends bash ca-certificates curl git \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm ci --omit=dev --ignore-scripts \
+  && npm cache clean --force \
+  && curl https://cursor.com/install -fsS | bash \
+  && cursor-agent --version
+
+COPY docker-entrypoint.sh /usr/local/bin/open-cursor-entrypoint
+
+RUN chmod +x /usr/local/bin/open-cursor-entrypoint
+
+VOLUME ["/root/.cursor"]
 
 EXPOSE 32124
 
-CMD ["node", "dist/server/main.js"]
+ENTRYPOINT ["open-cursor-entrypoint"]
+CMD ["serve"]
