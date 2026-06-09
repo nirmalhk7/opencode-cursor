@@ -6,7 +6,7 @@ Agentproxy lets OpenAI-compatible clients talk to your Cursor subscription throu
 
 ## Requirements
 
-- Node.js or Bun
+- Node.js 22+
 - `cursor-agent` installed and available on `PATH`
 - Cursor authentication via:
 
@@ -189,6 +189,8 @@ npm install
 npm run build
 npm test
 ```
+
+Coding-agent guidance lives in [`AGENTS.md`](AGENTS.md). It describes the active service files, legacy directories, validation commands, and OpenAI/OpenClaw compatibility expectations.
 
 The service implementation lives in:
 

@@ -1,5 +1,19 @@
 # Release Notes
 
+## agentproxy - OpenAI-compatible Cursor service
+
+### Highlights
+
+- The active project is now `agentproxy`, a standalone OpenAI-compatible HTTP service backed by `cursor-agent`.
+- Supported endpoints include `/health`, `/v1/models`, `/v1/models/{id}`, and `/v1/chat/completions`.
+- Chat completions support JSON and SSE responses, Cursor reasoning output, usage normalization, and function tool calls for OpenAI/OpenClaw clients.
+- Docker images include the official Cursor CLI and can authenticate with `CURSOR_API_KEY` or a persisted browser-login volume.
+- Active validation is Node-based: `npm run build` and `npm test`.
+
+### Historical notes
+
+The sections below describe earlier OpenCode plugin and ACP implementation milestones. They are retained as project history, not as the current active architecture.
+
 ## v2.1.2 - OpenCode Tool Loop + CI Split
 
 ### Highlights

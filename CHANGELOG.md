@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+- Rebranded the active service/package surface as `agentproxy`.
+- Converted the active project from an OpenCode plugin package to a standalone OpenAI-compatible service backed by `cursor-agent`.
+- Switched the active build/test workflow to Node and TypeScript (`npm run build`, `npm test`).
+
+### Added
+- OpenAI-compatible `/health`, `/v1/models`, `/v1/models/{id}`, and `/v1/chat/completions` endpoints.
+- OpenClaw-compatible function tool calling, including `tool_choice`, streamed `delta.tool_calls`, `finish_reason: "tool_calls"`, and `role: "tool"` follow-up support.
+- Docker image packaging with bundled Cursor CLI and GHCR deployment script.
+- `AGENTS.md` with repo guidance for future coding agents.
+
 ## [2.3.5] - 2026-02-17
 
 ### Fixed

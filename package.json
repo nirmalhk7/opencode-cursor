@@ -10,7 +10,7 @@
     "dev": "tsc -p tsconfig.json --watch",
     "serve": "node dist/server/main.js",
     "docker:publish": "scripts/deploy-ghcr.sh",
-    "test": "npm run build && node --test tests/openai-service.test.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs",
     "test:unit": "npm test",
     "test:integration": "npm test",
     "prepublishOnly": "npm run build"

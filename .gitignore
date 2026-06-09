@@ -25,6 +25,5 @@ UNINSTALL_STEPS.md
 *-cd-*.txt
 docs/plans/
 
-# Agent configuration (local only)
-AGENTS.md
+# Agent scratch files (local only)
 TOOL_SMOKE.md
