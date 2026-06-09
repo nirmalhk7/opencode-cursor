@@ -33,5 +33,5 @@ jobs:
             echo "## agentproxy test job"
             echo "- Status: \`${{ job.status }}\`"
             echo "- Command: \`npm test\`"
-            echo "- Scope: active OpenAI-compatible service + docs metadata tests"
+            echo "- Scope: OpenAI service integration, streaming/prompt unit tests, performance checks, docs metadata"
           } >> "$GITHUB_STEP_SUMMARY"
